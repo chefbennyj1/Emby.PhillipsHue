@@ -480,7 +480,7 @@
                             liveTvPlaybackUnPausedSelect.options[liveTvPlaybackUnPausedSelect.selectedIndex >= 0
                                 ? liveTvPlaybackUnPausedSelect.selectedIndex
                                 : 0].value,
-                        Schedule: schedule.value;
+                        Schedule: schedule.value
                 }
 
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
