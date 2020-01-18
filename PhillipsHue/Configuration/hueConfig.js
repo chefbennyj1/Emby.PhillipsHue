@@ -68,10 +68,13 @@
                 optionProfile.AppName +
                 '">';
             html += '<div class="listItemBody"> ';
+            html += '<div class="flex">'
+            html += '<img style="max-width:2em; padding-right:1em" src="' + deviceNameImage(optionProfile.DeviceName, optionProfile.AppName) + '"/>';
             html += '<div class="listItemBodyText">' + optionProfile.DeviceName + ' ' + optionProfile.AppName + '</div>';
             html += '</div>';
+            html += '</div>';
             html +=
-                '<i class="md-icon deleteProfile" style="font-size:2.5em">delete</i>';
+                '<i class="md-icon deleteProfile" style="font-size:1.5em">delete</i>';
             html += '</div>';
             return html;
         } 
@@ -155,6 +158,32 @@
                     }
                 });
         }
+
+        function deviceNameImage(deviceName, AppName) {
+            if (deviceName.toLowerCase().indexOf("xbox") > -1)
+                return "https://github.com/MediaBrowser/Emby.Resources/raw/master/images/devices/xboxone.png";
+            if (deviceName.toLowerCase().indexOf("roku") > -1)
+                return "https://github.com/MediaBrowser/Emby.Resources/raw/master/images/devices/roku.png";
+            if (deviceName.toLowerCase().indexOf("chrome") > -1)
+                return "https://github.com/MediaBrowser/Emby.Resources/raw/master/images/devices/chrome.png";
+            if (deviceName.toLowerCase().indexOf("firefox") > -1)
+                return "https://github.com/MediaBrowser/Emby.Resources/raw/master/images/devices/firefox.png";
+            if (AppName.toLowerCase().indexOf("android") > -1)
+                return "https://github.com/MediaBrowser/Emby.Resources/raw/master/images/devices/android.png";
+            if (deviceName.toLowerCase().indexOf("edge") > -1)
+                return "https://github.com/MediaBrowser/Emby.Resources/raw/master/images/devices/edge.png";
+            if (deviceName.toLowerCase().indexOf("amazon") > -1)
+                return "https://github.com/MediaBrowser/Emby.Resources/raw/master/images/devices/amazon.png";
+            if (deviceName.toLowerCase().indexOf("apple") > -1)
+                return "https://github.com/MediaBrowser/Emby.Resources/raw/master/images/devices/appletev.png";
+            if (deviceName.toLowerCase().indexOf("windows") > -1)
+                return "https://github.com/MediaBrowser/Emby.Resources/raw/master/images/devices/windowsrt.png";
+            if (deviceName.toLowerCase().indexOf("dlna") > -1)
+                return "https://github.com/MediaBrowser/Emby.Resources/raw/master/images/devices/dlna.png";
+            if (deviceName.toLowerCase().indexOf("chromecast") > -1)
+                return "https://github.com/MediaBrowser/Emby.Resources/raw/master/images/devices/chromecast.png";
+            return "https://github.com/MediaBrowser/Emby.Resources/blob/master/images/Logos/logoicon.png";
+        }     
 
         function openDeviceEditorDialog(device, app, config, view) {
             var dlg = dialogHelper.createDialog({
@@ -295,13 +324,13 @@
 
             html += '<div class="sectionTitleContainer align-items-center">';
             html += '<h2 class="sectionTitle"><span>Schedule Time</span></h2> ';
-            html += '<p>These scene will be set when movies start, stop or resume playing.</p> ';
+            html += '<p>Scenes will be ignored before a certain time of day.</p> ';
             html += '</div> ';
 
             html += '<div class="inputContainer">';
             html += '<label class="inputLabel inputLabelUnfocused" for="scheduleTime">Schedule Time to trigger events</label>';
             html += '<input is="emby-input" type="time" id="scheduleTime" label="Schedule Time to trigger events" class="emby-input">';
-            html += '<div class="fieldDescription">Determines when scenes should be run by Emby.</div>';
+            html += '<div class="fieldDescription">Determines when scenes should be run by Emby. Between the time above and 4 AM.</div>';
             html += '</div>';
 
 
@@ -404,7 +433,7 @@
                         }
 
                         if (config.Schedule) {
-                            schedle.value = config.Schedule;
+                            schedule.value = config.Schedule;
                         }
                     }
                 });
@@ -517,6 +546,11 @@
 
         function loadPageData(view, config) {
 
+            var btnImage = view.querySelector('#buttonPress');
+            ApiClient.getJSON(ApiClient.getUrl("PhillipsHueButtonPressPng")).then((result) => {
+                btnImage.style.backgroundImage =
+                    "url('data:image/png;base64," + result.image + "')";
+            });
             //Fill the Device List - This is a sorted list without duplications
             var embyDeviceList = view.querySelector('#selectEmbyDevice');
             embyDeviceList.innerHTML = "";

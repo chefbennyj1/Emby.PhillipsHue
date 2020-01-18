@@ -17,10 +17,10 @@ namespace PhillipsHue
             Instance = this;
         }
 
-        public override string Name => "HueMoodLighting";
+        public override string Name => "Phillips Hue";
            
 
-        public override string Description => "HueMoodLighting for Emby";
+        public override string Description => "Phillips Hue for Emby";
            
 
         public static Plugin Instance { get; private set; }
@@ -51,6 +51,7 @@ namespace PhillipsHue
                     Name = "hueConfigJS",
                     EmbeddedResourcePath = GetType().Namespace + ".Configuration.hueConfig.js"
                 }
+                
 
             };
         }
