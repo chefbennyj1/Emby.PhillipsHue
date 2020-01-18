@@ -1,0 +1,72 @@
+﻿
+<div data-role="page" class=" type-interior pluginConfigurationPage hueConfig" data-require="emby-button,emby-input,emby-select,emby-checkbox" data-controller="__plugin/hueConfigJS">
+    <div data-role="">
+        <div class="content-primary">
+            <form class="hueConfigurationForm">
+
+                <div class="infoBanner" id="huePressDiscoverBanner" style="margin-bottom:1.8em;">
+                    Press the button on your hue bridge to place it in discovery mode. Then press the "discover" button below.
+                </div>
+
+
+                <button is="emby-button" type="button" style="margin-bottom: 1.8em; font-size: 1.5em;" class="raised button-submit block emby-button" id="discoverBridge">Discover</button>
+
+
+
+                <div class="paperList flex" style="padding-right: 3em;margin-bottom: 1.8em;">
+                    <i class="md-icon" id="BridgeStatusIcon" style="padding-right: 0.3em;color: slategray;font-size: 3em;">error</i>
+                    <div class="listItemBody">
+                        <div class="listItemBodyText" id="BridgeStatus">Not Connected</div>
+                    </div>
+                </div>
+
+                <div class="hueOptions hide">
+                    <div style="padding-bottom:3em">
+                        <h1 style="display: flex; align-items: center; margin: auto;">Global Options</h1>
+                        <div class="checkboxList checkboxList-paperList">
+                            <!-- HTTPS Connection -->
+                            <div class="sortableOption">
+                                <label class="listItemCheckboxContainer emby-checkbox-label">
+                                    <input name="chkHTTPS" type="checkbox" is="emby-checkbox" id="chkHTTPS" class="emby-checkbox" data-embycheckbox="true">
+                                    <span class="checkboxLabel">Use HTTPS to bridge (most should leave unchecked)</span>
+                                    <span class="emby-checkbox-focushelper"></span>
+                                    <span class="checkboxOutline">
+                                        <i class="md-icon checkboxIcon checkboxIcon-checked"></i>
+                                        <i class="md-icon checkboxIcon checkboxIcon-unchecked"></i>
+                                    </span>
+                                </label>
+                            </div>
+                            
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; padding-bottom: 6%">
+                        <!-- Emby Devices List -->
+                        <div style="flex-grow: 1;" class="selectContainer">
+                            <label class="selectLabel" for="selectEmbyDevice">Network Devices:</label>
+                            <select is="emby-select" name="selectEmbyDevice" id="selectEmbyDevice" label="Emby Network Devices:" data-mini="true" class="emby-select-withcolor emby-select"></select>
+                            <div class="selectArrowContainer">
+                                <div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>
+                            </div>
+                            <div class="fieldDescription">
+                                Choose an Emby device from the list to begin adding functionality with Phillips Hue.
+                            </div>
+                        </div>
+                        <!-- Add Button -->
+                        <button id="addButton" is="paper-icon-button-light" type="button" data-theme="b" class="emby-input-iconbutton paper-icon-button-light" style="margin-left: 1em;bottom: 3em;">
+                            <i class="md-icon">add</i>
+                        </button>
+                    </div>
+
+
+                    <h1 style="display: flex; align-items: center; margin: auto;">Saved Profiles</h1>
+                    <div class="paperList" id="savedOptions">
+
+                    </div>
+                    <p style="margin-bottom:1.8em;">
+                        Profiles may only have one device with the same name saved in the configuration.
+                    </p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
