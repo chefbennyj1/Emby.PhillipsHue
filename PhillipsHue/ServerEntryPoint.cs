@@ -50,11 +50,10 @@ namespace PhillipsHue
         private void PlaybackProgress(object sender, PlaybackProgressEventArgs e)
         {
             var config = Plugin.Instance.Configuration;
-
+            
             foreach (var session in SessionManager.Sessions)
             {
-                
-                switch (session.PlayState.IsPaused)
+                switch (session.PlayState.IsPaused || e.IsPaused)
                 {
                     case true:
 
@@ -182,6 +181,7 @@ namespace PhillipsHue
             var config = Plugin.Instance.Configuration;
 
             if (config.BridgeIpAddress == null) return;
+            if (e.IsPaused) return;
 
             foreach (var profile in config.SavedHueEmbyProfiles)
             {
@@ -288,7 +288,8 @@ namespace PhillipsHue
         {
             if (string.IsNullOrEmpty(profile.Schedule)) return true;
 
-            return (DateTime.Now.TimeOfDay >= TimeSpan.Parse(profile.Schedule + ":00") && DateTime.Now.TimeOfDay <= TimeSpan.Parse("4:00:00"));
+            return (DateTime.Now.TimeOfDay >= TimeSpan.Parse(profile.Schedule + ":00")) &&
+                   (DateTime.Now <= DateTime.Now.Date.AddDays(1).AddHours(4));
         }
 
         private void RunScene(string data, PluginConfiguration config)

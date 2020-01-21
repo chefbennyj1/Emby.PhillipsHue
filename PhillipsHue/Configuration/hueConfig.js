@@ -145,7 +145,7 @@
                                 loading.hide();
                                 require(['alert'], function (alert) {
                                     alert({
-                                        title: 'Congradulations!',
+                                        title: 'Congratulations!',
                                         text: 'Emby Server is now connected to Phillips Hue.'
                                     });
                                 });
@@ -359,7 +359,7 @@
             var liveTvPlaybackPausedSelect   = dlg.querySelector('#LiveTvPlaybackPaused');
             var liveTvPlaybackUnPausedSelect = dlg.querySelector('#LiveTvPlaybackUnPaused');
 
-            var schedule                     = dlg.querySelector('#scheduleTime')
+            var schedule                     = dlg.querySelector('#scheduleTime');
 
             removeOptionsFromSelect(moviePlaybackStartedSelect);
             removeOptionsFromSelect(moviePlaybackStoppedSelect);
@@ -428,12 +428,9 @@
                                     liveTvPlaybackStoppedSelect.value  = option.LiveTvPlaybackStopped  || "";
                                     liveTvPlaybackPausedSelect.value   = option.LiveTvPlaybackPaused   || "";
                                     liveTvPlaybackUnPausedSelect.value = option.LiveTvPlaybackUnPaused || "";
+                                    schedule.value                     = option.Schedule               || "";
                                 }
                             });
-                        }
-
-                        if (config.Schedule) {
-                            schedule.value = config.Schedule;
                         }
                     }
                 });
