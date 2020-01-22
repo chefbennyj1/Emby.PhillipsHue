@@ -19,7 +19,8 @@ namespace PhillipsHue
         private static IHttpClient Client { get; set; }
         private static ServerEntryPoint Instance { get; set; }
         private static ISessionManager SessionManager { get; set; }
-        
+
+        // ReSharper disable once TooManyDependencies
         public ServerEntryPoint(IJsonSerializer jsonSerializer, IHttpClient client, ISessionManager sessionManager, ILogManager logManager)
         {
             JsonSerializer = jsonSerializer;
@@ -29,7 +30,7 @@ namespace PhillipsHue
             LogManager = logManager;
             logger = LogManager.GetLogger(Plugin.Instance.Name);
         }
-        
+
 
         public void Dispose()
         {
@@ -54,7 +55,7 @@ namespace PhillipsHue
             if (!SessionManager.Sessions.Any(s => s.PlayState.IsPaused) && !PausedSessionsIds.Any()) return;
 
             var config = Plugin.Instance.Configuration;
-            
+
             foreach (var session in SessionManager.Sessions)
             {
                 switch (session.PlayState.IsPaused || e.IsPaused)
@@ -76,7 +77,7 @@ namespace PhillipsHue
 
                         if (PausedSessionsIds.Exists(s => s.Equals(session.Id)))
                         {
-                            PlaybackUnPaused(e, config, session);
+                            PlaybackUnPaused(e, config, config.SavedHueEmbyProfiles.FirstOrDefault(p => p.DeviceName.Equals(session.DeviceName)));
                             PausedSessionsIds.RemoveAll(s => s.Equals(session.Id));
                         }
 
@@ -85,16 +86,13 @@ namespace PhillipsHue
             }
         }
 
-        private void PlaybackUnPaused(PlaybackProgressEventArgs e, PluginConfiguration config, SessionInfo session)
+        // ReSharper disable once TooManyArguments
+        private void PlaybackUnPaused(PlaybackProgressEventArgs e, PluginConfiguration config, PhillipsHueSceneEmbyProfile profile)
         {
             if (config.BridgeIpAddress == null) return;
 
             logger.Info("Phillips Hue Reports Playback UnPaused...");
-
-            var profile = config.SavedHueEmbyProfiles.FirstOrDefault(p => p.DeviceName.Equals(session.DeviceName) && session.Client.Equals(p.AppName));
-
-            if (profile == null) return;
-
+            
             logger.Info("Phillips Hue Found Profile Device: " + profile.DeviceName);
 
             if (!ScheduleAllowScene(profile))
@@ -130,7 +128,7 @@ namespace PhillipsHue
                 scene = sceneName
 
             }), config);
-            
+
         }
 
         // ReSharper disable once TooManyArguments
@@ -139,7 +137,7 @@ namespace PhillipsHue
             if (config.BridgeIpAddress == null) return;
 
             logger.Info("Phillips Hue Reports Playback Paused...");
-            
+
             logger.Info($"Phillips Hue Found Session Device: { session.DeviceName }");
 
             if (!ScheduleAllowScene(profile))
@@ -185,49 +183,53 @@ namespace PhillipsHue
             var config = Plugin.Instance.Configuration;
 
             if (config.BridgeIpAddress == null) return;
+
             if (e.IsPaused) return;
 
-            foreach (var profile in config.SavedHueEmbyProfiles)
+            //We check here if a profile exists or return
+            if (!config.SavedHueEmbyProfiles.Exists(p => p.DeviceName.Equals(e.DeviceName) &&
+                                                         p.AppName.Equals(e.ClientName))) return;
+
+            //If the profile exists above and we get here, then we can assume this will not be null, even though he have to assert it is not null below "profile?.{property}"
+            var profile = config.SavedHueEmbyProfiles.FirstOrDefault(p => p.DeviceName.Equals(e.DeviceName) &&
+                                                                          p.AppName.Equals(e.ClientName));
+
+            logger.Info($"Phillips Hue Found Profile Device: { e.DeviceName } ");
+
+            if (!ScheduleAllowScene(profile))
             {
-                if (e.DeviceName != profile.DeviceName || e.ClientName != profile.AppName) continue;
-
-                logger.Info($"Phillips Hue Found Profile Device: { e.DeviceName } ");
-
-                if (!ScheduleAllowScene(profile))
-                {
-                    logger.Info($"Phillips Hue profile not allowed to run at this time: { profile.DeviceName }");
-                    return;
-                }
-
-                var sceneName = string.Empty;
-                switch (e.MediaInfo.Type)
-                {
-                    case "Movie":
-                        sceneName = profile.MoviesPlaybackStopped;
-                        break;
-                    case "TvChannel":
-                        sceneName = profile.LiveTvPlaybackStopped;
-                        break;
-                    case "Series":
-                        sceneName = profile.TvPlaybackStopped;
-                        break;
-                    case "Season":
-                        sceneName = profile.TvPlaybackStopped;
-                        break;
-                    case "Episode":
-                        sceneName = profile.TvPlaybackStopped;
-                        break;
-                }
-
-                logger.Info("Phillips Hue Reports " + e.MediaInfo.Type + " will trigger Playback Stopped Scene on " + e.DeviceName);
-
-                RunScene(JsonSerializer.SerializeToString(new SceneRequest
-                {
-                    scene = sceneName
-
-                }), config);
-
+                logger.Info($"Phillips Hue profile not allowed to run at this time: { profile?.DeviceName }");
+                return;
             }
+
+            var sceneName = string.Empty;
+            switch (e.MediaInfo.Type)
+            {
+                case "Movie":
+                    sceneName = profile?.MoviesPlaybackStopped;
+                    break;
+                case "TvChannel":
+                    sceneName = profile?.LiveTvPlaybackStopped;
+                    break;
+                case "Series":
+                    sceneName = profile?.TvPlaybackStopped;
+                    break;
+                case "Season":
+                    sceneName = profile?.TvPlaybackStopped;
+                    break;
+                case "Episode":
+                    sceneName = profile?.TvPlaybackStopped;
+                    break;
+            }
+
+            logger.Info("Phillips Hue Reports " + e.MediaInfo.Type + " will trigger Playback Stopped Scene on " + e.DeviceName);
+
+            RunScene(JsonSerializer.SerializeToString(new SceneRequest
+            {
+                scene = sceneName
+
+            }), config);
+
         }
 
         private void PlaybackStart(object sender, PlaybackProgressEventArgs e)
@@ -235,52 +237,51 @@ namespace PhillipsHue
             var config = Plugin.Instance.Configuration;
             if (config.BridgeIpAddress == null) return;
 
+            //No profile, move on
+            if (!config.SavedHueEmbyProfiles.Exists(p => p.DeviceName.Equals(e.DeviceName) && p.AppName.Equals(e.ClientName))) return;
+
             logger.Info("Phillips Hue Reports Playback Started");
 
-            foreach (var profile in config.SavedHueEmbyProfiles)
+            var profile = config.SavedHueEmbyProfiles.FirstOrDefault(p => p.DeviceName.Equals(e.DeviceName) &&
+                                                                          p.AppName.Equals(e.ClientName));
+
+            logger.Info($"Phillips Hue Found Profile Device: { e.DeviceName }");
+
+            if (!ScheduleAllowScene(profile))
             {
-                if (!string.Equals(e.DeviceName, profile.DeviceName, StringComparison.InvariantCultureIgnoreCase) ||
-                    
-                    !string.Equals(e.ClientName,profile.AppName, StringComparison.InvariantCultureIgnoreCase)) continue;
-
-                logger.Info($"Phillips Hue Found Profile Device: { e.DeviceName }");
-
-                if (!ScheduleAllowScene(profile))
-                {
-                    logger.Info($"Phillips Hue profile not allowed to run at this time: { profile.DeviceName }");
-                    return;
-                }
-
-                var sceneName = string.Empty;
-
-                switch (e.MediaInfo.Type)
-                {
-                    case "Movie":
-                        sceneName = profile.MoviesPlaybackStarted;
-                        break;
-                    case "TvChannel":
-                        sceneName = profile.LiveTvPlaybackStarted;
-                        break;
-                    case "Series":
-                        sceneName = profile.TvPlaybackStarted;
-                        break;
-                    case "Season":
-                        sceneName = profile.TvPlaybackStarted;
-                        break;
-                    case "Episode":
-                        sceneName = profile.TvPlaybackStarted;
-                        break;
-                }
-
-                logger.Info($"Phillips Hue Reports { e.MediaInfo.Type } will trigger Playback Stopped Scene on { e.DeviceName }");
-
-                RunScene(JsonSerializer.SerializeToString(new SceneRequest
-                {
-                    scene = sceneName
-
-                }), config);
-
+                logger.Info($"Phillips Hue profile not allowed to run at this time: { profile?.DeviceName }");
+                return;
             }
+
+            var sceneName = string.Empty;
+
+            switch (e.MediaInfo.Type)
+            {
+                case "Movie":
+                    sceneName = profile?.MoviesPlaybackStarted;
+                    break;
+                case "TvChannel":
+                    sceneName = profile?.LiveTvPlaybackStarted;
+                    break;
+                case "Series":
+                    sceneName = profile?.TvPlaybackStarted;
+                    break;
+                case "Season":
+                    sceneName = profile?.TvPlaybackStarted;
+                    break;
+                case "Episode":
+                    sceneName = profile?.TvPlaybackStarted;
+                    break;
+            }
+
+            logger.Info($"Phillips Hue Reports { e.MediaInfo.Type } will trigger Playback Started Scene on { e.DeviceName }");
+
+            RunScene(JsonSerializer.SerializeToString(new SceneRequest
+            {
+                scene = sceneName
+
+            }), config);
+            
         }
 
         private class SceneRequest
