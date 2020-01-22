@@ -49,6 +49,10 @@ namespace PhillipsHue
 
         private void PlaybackProgress(object sender, PlaybackProgressEventArgs e)
         {
+            //No paused Session and no flagged sessions paused
+            // ReSharper disable once ComplexConditionExpression
+            if (!SessionManager.Sessions.Any(s => s.PlayState.IsPaused) && !PausedSessionsIds.Any()) return;
+
             var config = Plugin.Instance.Configuration;
             
             foreach (var session in SessionManager.Sessions)
@@ -56,11 +60,15 @@ namespace PhillipsHue
                 switch (session.PlayState.IsPaused || e.IsPaused)
                 {
                     case true:
-
+                        // We've already flagged this session, move on
                         if (PausedSessionsIds.Exists(s => s.Equals(session.Id))) continue;
-                        
+
+                        //We don't have a profile for this paused session, move on
+                        if (!config.SavedHueEmbyProfiles.Exists(p => p.DeviceName.Equals(session.DeviceName))) continue;
+
                         PausedSessionsIds.Add(session.Id);
-                        PlaybackPaused(e, config, session);
+
+                        PlaybackPaused(e, config, session, config.SavedHueEmbyProfiles.FirstOrDefault(p => p.DeviceName.Equals(session.DeviceName)));
 
                         continue;
 
@@ -71,6 +79,7 @@ namespace PhillipsHue
                             PlaybackUnPaused(e, config, session);
                             PausedSessionsIds.RemoveAll(s => s.Equals(session.Id));
                         }
+
                         continue;
                 }
             }
@@ -121,22 +130,17 @@ namespace PhillipsHue
                 scene = sceneName
 
             }), config);
-
-           
-
             
         }
 
-        private void PlaybackPaused(PlaybackProgressEventArgs e, PluginConfiguration config, SessionInfo session)
+        // ReSharper disable once TooManyArguments
+        private void PlaybackPaused(PlaybackProgressEventArgs e, PluginConfiguration config, SessionInfo session, PhillipsHueSceneEmbyProfile profile)
         {
             if (config.BridgeIpAddress == null) return;
 
             logger.Info("Phillips Hue Reports Playback Paused...");
-
-            var profile = config.SavedHueEmbyProfiles.FirstOrDefault(p => p.DeviceName.Equals(session.DeviceName) && session.Client.Equals(p.AppName));
-            if (profile == null) return;
             
-            logger.Info($"Phillips Hue Found Profile Device: { profile.DeviceName }");
+            logger.Info($"Phillips Hue Found Session Device: { session.DeviceName }");
 
             if (!ScheduleAllowScene(profile))
             {
@@ -284,7 +288,7 @@ namespace PhillipsHue
             public string scene { get; set; }
         }
 
-        private static bool ScheduleAllowScene(PluginConfiguration.PhillipsHueSceneEmbyProfile profile)
+        private static bool ScheduleAllowScene(PhillipsHueSceneEmbyProfile profile)
         {
             if (string.IsNullOrEmpty(profile.Schedule)) return true;
 

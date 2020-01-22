@@ -15,31 +15,32 @@ namespace PhillipsHue.Configuration
 
         public List<PhillipsHueSceneEmbyProfile> SavedHueEmbyProfiles{ get; set; } = new List<PhillipsHueSceneEmbyProfile>();
        
-        public class PhillipsHueSceneEmbyProfile
-        {
-            //These are emby client names
-            //Warning! do not compare client Ids because they could always change
-            public string AppName { get; set; }
-            public string DeviceName { get; set; }
-            
-            //These are the names of the scenes that we'll compare when an event is triggered
-            public string MoviesPlaybackStarted { get; set; }
-            public string MoviesPlaybackStopped { get; set; }
-            public string MoviesPlaybackPaused { get; set; }
-            public string MoviesPlaybackUnPaused { get; set; }
+        
+    }
+    public class PhillipsHueSceneEmbyProfile
+    {
+        //These are emby client names
+        //Warning! do not compare client Ids because they could always change
+        public string AppName { get; set; }
+        public string DeviceName { get; set; }
 
-            public string TvPlaybackStarted { get; set; }
-            public string TvPlaybackStopped { get; set; }
-            public string TvPlaybackPaused { get; set; }
-            public string TvPlaybackUnPaused { get; set; }
+        //These are the names of the scenes that we'll compare when an event is triggered
+        public string MoviesPlaybackStarted { get; set; }
+        public string MoviesPlaybackStopped { get; set; }
+        public string MoviesPlaybackPaused { get; set; }
+        public string MoviesPlaybackUnPaused { get; set; }
 
-            public string LiveTvPlaybackStarted { get; set; }
-            public string LiveTvPlaybackStopped { get; set; }
-            public string LiveTvPlaybackPaused { get; set; }
-            public string LiveTvPlaybackUnPaused { get; set; }
+        public string TvPlaybackStarted { get; set; }
+        public string TvPlaybackStopped { get; set; }
+        public string TvPlaybackPaused { get; set; }
+        public string TvPlaybackUnPaused { get; set; }
 
-            public string Schedule { get; set; }
-            
-        }  
+        public string LiveTvPlaybackStarted { get; set; }
+        public string LiveTvPlaybackStopped { get; set; }
+        public string LiveTvPlaybackPaused { get; set; }
+        public string LiveTvPlaybackUnPaused { get; set; }
+
+        public string Schedule { get; set; }
+
     }
 }
