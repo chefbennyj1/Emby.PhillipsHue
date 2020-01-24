@@ -42,5 +42,8 @@ namespace PhillipsHue.Configuration
 
         public string Schedule { get; set; }
 
+        public string MediaItemCredits { get; set; }
+        public int MediaItemCreditLength { get; set; }
+
     }
 }

@@ -50,40 +50,52 @@ namespace PhillipsHue
 
         private void PlaybackProgress(object sender, PlaybackProgressEventArgs e)
         {
-            //No paused Session and no flagged sessions paused
-            // ReSharper disable once ComplexConditionExpression
-            if (!SessionManager.Sessions.Any(s => s.PlayState.IsPaused) && !PausedSessionsIds.Any()) return;
-
             var config = Plugin.Instance.Configuration;
-
-            foreach (var session in SessionManager.Sessions)
+            
+            if (config.SavedHueEmbyProfiles.Exists(p => p.DeviceName.Equals(e.Session.DeviceName)))
             {
-                switch (session.PlayState.IsPaused || e.IsPaused)
+                var profile = config.SavedHueEmbyProfiles.FirstOrDefault(p => p.DeviceName.Equals(e.Session.DeviceName));
+                if (profile?.MediaItemCredits != null)
                 {
-                    case true:
-                        // We've already flagged this session, move on
-                        if (PausedSessionsIds.Exists(s => s.Equals(session.Id))) continue;
-
-                        //We don't have a profile for this paused session, move on
-                        if (!config.SavedHueEmbyProfiles.Exists(p => p.DeviceName.Equals(session.DeviceName))) continue;
-
-                        PausedSessionsIds.Add(session.Id);
-
-                        PlaybackPaused(e, config, session, config.SavedHueEmbyProfiles.FirstOrDefault(p => p.DeviceName.Equals(session.DeviceName)));
-
-                        continue;
-
-                    case false:
-
-                        if (PausedSessionsIds.Exists(s => s.Equals(session.Id)))
-                        {
-                            PlaybackUnPaused(e, config, config.SavedHueEmbyProfiles.FirstOrDefault(p => p.DeviceName.Equals(session.DeviceName)));
-                            PausedSessionsIds.RemoveAll(s => s.Equals(session.Id));
-                        }
-
-                        continue;
+                    if (e.MediaInfo.Type.Equals("Movie") &&
+                        e.Item.PlaybackPositionTicks > (e.Item.RunTimeTicks - (profile?.MediaItemCreditLength * 20)))
+                    {
+                        PlaybackCredits(e, profile, config);
+                    }
                 }
             }
+
+            //No paused Session and no flagged sessions paused, move on
+            // ReSharper disable once ComplexConditionExpression
+            if (!SessionManager.Sessions.Any(s => s.PlayState.IsPaused) && !PausedSessionsIds.Any()) return;
+            
+            switch (e.Session.PlayState.IsPaused)
+            {
+                case true:
+                    // We've already flagged this session, move on
+                    if (PausedSessionsIds.Exists(s => s.Equals(e.Session.Id))) return;
+                    //We don't have a profile for this paused session device, move on
+                    if (!config.SavedHueEmbyProfiles.Exists(p => p.DeviceName.Equals(e.Session.DeviceName))) return;
+
+                    PausedSessionsIds.Add(e.Session.Id);
+
+                    PlaybackPaused(e, config, e.Session,
+                            config.SavedHueEmbyProfiles.FirstOrDefault(p =>
+                                p.DeviceName.Equals(e.Session.DeviceName)));
+
+                    break;
+
+                case false:
+
+                    if (PausedSessionsIds.Exists(s => s.Equals(e.Session.Id)))
+                    {
+                        PlaybackUnPaused(e, config, config.SavedHueEmbyProfiles.FirstOrDefault(p => p.DeviceName.Equals(e.Session.DeviceName)));
+                        PausedSessionsIds.RemoveAll(s => s.Equals(e.Session.Id));
+                    }
+
+                    break;
+            }
+           
         }
 
         // ReSharper disable once TooManyArguments
@@ -92,7 +104,7 @@ namespace PhillipsHue
             if (config.BridgeIpAddress == null) return;
 
             logger.Info("Phillips Hue Reports Playback UnPaused...");
-            
+
             logger.Info("Phillips Hue Found Profile Device: " + profile.DeviceName);
 
             if (!ScheduleAllowScene(profile))
@@ -190,7 +202,13 @@ namespace PhillipsHue
             if (!config.SavedHueEmbyProfiles.Exists(p => p.DeviceName.Equals(e.DeviceName) &&
                                                          p.AppName.Equals(e.ClientName))) return;
 
-            //If the profile exists above and we get here, then we can assume this will not be null, even though he have to assert it is not null below "profile?.{property}"
+            //The item was in a paused state when the user stopped it, clean up the paused session list.
+            if (PausedSessionsIds.Exists(s => s.Equals(e.Session.Id))) PausedSessionsIds.RemoveAll(s => s.Equals(e.Session.Id));
+
+            //The item might appear in the credit session list remove it if it does.
+            if (CreditSessions.Exists(s => s.Equals(e.Session.Id))) CreditSessions.RemoveAll(s => s.Equals(e.Session.Id));
+
+            //We can assume this will not be null, even though he have to assert it is not null below "profile?.{property}"
             var profile = config.SavedHueEmbyProfiles.FirstOrDefault(p => p.DeviceName.Equals(e.DeviceName) &&
                                                                           p.AppName.Equals(e.ClientName));
 
@@ -281,7 +299,21 @@ namespace PhillipsHue
                 scene = sceneName
 
             }), config);
+
+        }
+
+        private List<string> CreditSessions = new List<string>();
+        private void PlaybackCredits(PlaybackProgressEventArgs e, PhillipsHueSceneEmbyProfile profile, PluginConfiguration config)
+        {
+            if (CreditSessions.Exists(s => s.Equals(e.Session.Id))) return; //We've already triggered the event, it's in the list - move on
             
+            CreditSessions.Add(e.Session.Id); //Add the session ID to the list so this event doesn't trigger again
+            logger.Info($"Phillips Hue Reports trigger Credit Scene on {e.DeviceName}"); //Log that shit.
+            RunScene(JsonSerializer.SerializeToString(new SceneRequest
+            {
+                scene = profile.MediaItemCredits
+            }), config);
+
         }
 
         private class SceneRequest

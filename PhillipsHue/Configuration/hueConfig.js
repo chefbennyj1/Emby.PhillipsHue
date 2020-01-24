@@ -159,11 +159,18 @@
                 });
         }
 
+        
         function deviceNameImage(deviceName, AppName) {
+            if (deviceName.toLowerCase().indexOf("safari") > -1 || AppName.toLowerCase().indexOf("safari") > -1)
+                return "https://github.com/MediaBrowser/Emby.Resources/raw/master/images/devices/safari.png";
+            if (deviceName.toLowerCase().indexOf("kodi") > -1 || (AppName.toLowerCase().indexOf("kodi") > -1))
+                return "https://github.com/MediaBrowser/Emby.Resources/raw/master/images/devices/kodi.png";
+            if (deviceName.toLowerCase().indexOf("ps4") > -1 || AppName.toLowerCase().indexOf("ps4") > -1)
+                return "https://github.com/MediaBrowser/Emby.Resources/raw/master/images/devices/ps4.png";
+            if (deviceName.toLowerCase().indexOf("roku") > -1 || AppName.toLowerCase().indexOf("roku") > -1)
+                return  "https://github.com/MediaBrowser/Emby.Resources/raw/master/images/devices/roku.jpg";
             if (deviceName.toLowerCase().indexOf("xbox") > -1)
                 return "https://github.com/MediaBrowser/Emby.Resources/raw/master/images/devices/xboxone.png";
-            if (deviceName.toLowerCase().indexOf("roku") > -1)
-                return "https://github.com/MediaBrowser/Emby.Resources/raw/master/images/devices/roku.png";
             if (deviceName.toLowerCase().indexOf("chrome") > -1)
                 return "https://github.com/MediaBrowser/Emby.Resources/raw/master/images/devices/chrome.png";
             if (deviceName.toLowerCase().indexOf("firefox") > -1)
@@ -182,7 +189,7 @@
                 return "https://github.com/MediaBrowser/Emby.Resources/raw/master/images/devices/dlna.png";
             if (deviceName.toLowerCase().indexOf("chromecast") > -1)
                 return "https://github.com/MediaBrowser/Emby.Resources/raw/master/images/devices/chromecast.png";
-            return "https://github.com/MediaBrowser/Emby.Resources/blob/master/images/Logos/logoicon.png";
+            return "https://github.com/MediaBrowser/Emby.Resources/raw/master/images/devices/logoicon.png";
         }     
 
         function openDeviceEditorDialog(device, app, config, view) {
@@ -250,6 +257,20 @@
             html += '</div> ';
             html += '</div>';
 
+            html += '<div class="selectContainer">';
+            html += '<label class="selectLabel" for="MediaItemCredits">Movies Credit Scene:</label>';
+            html += '<select is="emby-select" type="text" id="MediaItemCredits" name="MediaItemCredits" class="emby-input"></select>';
+            html += '<div class="selectArrowContainer">';
+            html += '<div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>';
+            html += '</div>';
+            html += '</div>';
+
+            html += '<div class="inputContainer">';
+            html += '<label class="inputLabel inputLabelUnfocused" for="creditLength">Movies Credit Length</label>';
+            html += '<input is="emby-input" type="number" id="creditLength" label="Media Item Credit Length" class="emby-input">';
+            html += '<div class="fieldDescription">Estimated time to schedule the credit scene before the end of the media item in seconds.</div>';
+            html += '</div>';
+
             html += '<div class="sectionTitleContainer align-items-center"> ';
             html += '<h2 class="sectionTitle"><span>Series</span></h2> ';
             html += '<p>These scene will be set when series/seasons/episodes start, stop or resume playing.</p>  ';
@@ -286,10 +307,12 @@
             html += '<div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i> ';
             html += '</div> ';
             html += '</div>';
+
             html += '<div class="sectionTitleContainer align-items-center">';
             html += '<h2 class="sectionTitle"><span>Live Tv</span></h2> ';
             html += '<p>These scene will be set when live tv streams start, stop or resume playing.</p> ';
             html += '</div> ';
+
             html += '<div class="selectContainer"> ';
             html += '<label class="selectLabel" for="LiveTvPlaybackStarted">LiveTv Playback Started Scene:</label>';
             html += '<select is="emby-select" type="text" id="LiveTvPlaybackStarted" name="LiveTvPlaybackStarted" class="emby-input"></select> ';
@@ -321,7 +344,8 @@
             html += '<div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>';
             html += '</div>';
             html += '</div> ';
-
+           
+            
             html += '<div class="sectionTitleContainer align-items-center">';
             html += '<h2 class="sectionTitle"><span>Schedule Time</span></h2> ';
             html += '<p>Scenes will be ignored before a certain time of day.</p> ';
@@ -332,8 +356,7 @@
             html += '<input is="emby-input" type="time" id="scheduleTime" label="Schedule Time to trigger events" class="emby-input">';
             html += '<div class="fieldDescription">Determines when scenes should be run by Emby. Between the time above and 4 AM.</div>';
             html += '</div>';
-
-
+            
             html += '<div class="formDialogFooter" style="margin:2em; padding-top:2%;">';
             html += '<button id="saveButton" is="emby-button" type="submit" class="raised button-submit block formDialogFooterItem emby-button">Save</button>';
             html += '</div>';
@@ -361,14 +384,23 @@
 
             var schedule                     = dlg.querySelector('#scheduleTime');
 
+            var mediaItemCreditLength        = dlg.querySelector('#creditLength');
+            var mediaItemCreditsSelect       = dlg.querySelector('#MediaItemCredits');
+
+
+            removeOptionsFromSelect(mediaItemCreditsSelect);
+            
+            // Append an empty option for the purpose of the user selecting no scene events.
+            mediaItemCreditsSelect.innerHTML            += ('<option value=""></option>');
+            
             removeOptionsFromSelect(moviePlaybackStartedSelect);
             removeOptionsFromSelect(moviePlaybackStoppedSelect);
             removeOptionsFromSelect(moviePlaybackPausedSelect);
             removeOptionsFromSelect(moviePlaybackUnPausedSelect);
             // Append an empty option for the purpose of the user selecting no scene events.
-            moviePlaybackStartedSelect.innerHTML += ('<option value=""></option>');
-            moviePlaybackStoppedSelect.innerHTML += ('<option value=""></option>');
-            moviePlaybackPausedSelect.innerHTML += ('<option value=""></option>');
+            moviePlaybackStartedSelect.innerHTML  += ('<option value=""></option>');
+            moviePlaybackStoppedSelect.innerHTML  += ('<option value=""></option>');
+            moviePlaybackPausedSelect.innerHTML   += ('<option value=""></option>');
             moviePlaybackUnPausedSelect.innerHTML += ('<option value=""></option>');
 
             removeOptionsFromSelect(seriesPlaybackStartedSelect);
@@ -376,9 +408,9 @@
             removeOptionsFromSelect(seriesPlaybackPausedSelect);
             removeOptionsFromSelect(seriesPlaybackUnPausedSelect);
             // Append an empty option for the purpose of the user selecting no scene events.
-            seriesPlaybackStartedSelect.innerHTML += ('<option value=""></option>');
-            seriesPlaybackStoppedSelect.innerHTML += ('<option value=""></option>');
-            seriesPlaybackPausedSelect.innerHTML += ('<option value=""></option>');
+            seriesPlaybackStartedSelect.innerHTML  += ('<option value=""></option>');
+            seriesPlaybackStoppedSelect.innerHTML  += ('<option value=""></option>');
+            seriesPlaybackPausedSelect.innerHTML   += ('<option value=""></option>');
             seriesPlaybackUnPausedSelect.innerHTML += ('<option value=""></option>');
 
             removeOptionsFromSelect(liveTvPlaybackStartedSelect);
@@ -386,9 +418,9 @@
             removeOptionsFromSelect(liveTvPlaybackPausedSelect);
             removeOptionsFromSelect(liveTvPlaybackUnPausedSelect);
             // Append an empty option for the purpose of the user selecting no scene events.
-            liveTvPlaybackStartedSelect.innerHTML += ('<option value=""></option>');
-            liveTvPlaybackStoppedSelect.innerHTML += ('<option value=""></option>');
-            liveTvPlaybackPausedSelect.innerHTML += ('<option value=""></option>');
+            liveTvPlaybackStartedSelect.innerHTML  += ('<option value=""></option>');
+            liveTvPlaybackStoppedSelect.innerHTML  += ('<option value=""></option>');
+            liveTvPlaybackPausedSelect.innerHTML   += ('<option value=""></option>');
             liveTvPlaybackUnPausedSelect.innerHTML += ('<option value=""></option>');
 
             
@@ -399,18 +431,19 @@
                         var sceneObjects = JSON.parse(result.Scenes);
                         for (var i = 0; i <= Object.keys(sceneObjects).length - 1; i++) {
 
-                            moviePlaybackStartedSelect.innerHTML += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
-                            moviePlaybackStoppedSelect.innerHTML += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
-                            moviePlaybackPausedSelect.innerHTML += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
-                            moviePlaybackUnPausedSelect.innerHTML += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
-                            seriesPlaybackStartedSelect.innerHTML += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
-                            seriesPlaybackStoppedSelect.innerHTML += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
-                            seriesPlaybackPausedSelect.innerHTML += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
+                            moviePlaybackStartedSelect.innerHTML   += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
+                            moviePlaybackStoppedSelect.innerHTML   += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
+                            moviePlaybackPausedSelect.innerHTML    += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
+                            moviePlaybackUnPausedSelect.innerHTML  += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
+                            seriesPlaybackStartedSelect.innerHTML  += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
+                            seriesPlaybackStoppedSelect.innerHTML  += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
+                            seriesPlaybackPausedSelect.innerHTML   += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
                             seriesPlaybackUnPausedSelect.innerHTML += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
-                            liveTvPlaybackStartedSelect.innerHTML += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
-                            liveTvPlaybackStoppedSelect.innerHTML += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
-                            liveTvPlaybackPausedSelect.innerHTML += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
+                            liveTvPlaybackStartedSelect.innerHTML  += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
+                            liveTvPlaybackStoppedSelect.innerHTML  += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
+                            liveTvPlaybackPausedSelect.innerHTML   += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
                             liveTvPlaybackUnPausedSelect.innerHTML += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
+                            mediaItemCreditsSelect.innerHTML       += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
                         };
                            
                         if (config.SavedHueEmbyProfiles) {
@@ -429,6 +462,9 @@
                                     liveTvPlaybackPausedSelect.value   = option.LiveTvPlaybackPaused   || "";
                                     liveTvPlaybackUnPausedSelect.value = option.LiveTvPlaybackUnPaused || "";
                                     schedule.value                     = option.Schedule               || "";
+                                    mediaItemCreditLength.value        = option.MediaItemCreditLength  || "";
+                                    mediaItemCreditsSelect.value       = option.MediaItemCredits       || "";
+
                                 }
                             });
                         }
@@ -453,7 +489,10 @@
                     var liveTvPlaybackPausedSelect   = dlg.querySelector('#LiveTvPlaybackPaused');
                     var liveTvPlaybackUnPausedSelect = dlg.querySelector('#LiveTvPlaybackUnPaused');
 
-                    var schedule                     = dlg.querySelector('#scheduleTime')
+                    var schedule                     = dlg.querySelector('#scheduleTime');
+
+                    var mediaItemCreditLength        = dlg.querySelector('#creditLength');
+                    var mediaItemCreditsSelect       = dlg.querySelector('#MediaItemCredits');
 
                     var newSavedHueEmbyOptions = {
                         AppName: app,
@@ -506,7 +545,12 @@
                             liveTvPlaybackUnPausedSelect.options[liveTvPlaybackUnPausedSelect.selectedIndex >= 0
                                 ? liveTvPlaybackUnPausedSelect.selectedIndex
                                 : 0].value,
-                        Schedule: schedule.value
+                        MediaItemCredits:
+                            mediaItemCreditsSelect.options[mediaItemCreditsSelect.selectedIndex >= 0
+                                ? mediaItemCreditsSelect.selectedIndex
+                                : 0].value,
+                        Schedule: schedule.value,
+                        MediaItemCreditLength : mediaItemCreditLength.value
                 }
 
                     ApiClient.getPluginConfiguration(pluginId).then((config) => {
@@ -528,8 +572,7 @@
                             loadPageData(view, config);
                             loading.hide();
                             dialogHelper.close(dlg);
-                        });
-
+                        }); 
                     });
                     
                 });
