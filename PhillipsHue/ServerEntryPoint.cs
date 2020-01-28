@@ -58,7 +58,7 @@ namespace PhillipsHue
                 if (profile?.MediaItemCredits != null)
                 {
                     if (e.MediaInfo.Type.Equals("Movie") &&
-                        e.Item.PlaybackPositionTicks > (e.Item.RunTimeTicks - (profile?.MediaItemCreditLength * 20)))
+                        e.Session.PlayState.PositionTicks > (e.Item.RunTimeTicks - (profile?.MediaItemCreditLength * 10000000)))
                     {
                         PlaybackCredits(e, profile, config);
                     }
