@@ -69,7 +69,7 @@
                 '">';
             html += '<div class="listItemBody"> ';
             html += '<div class="flex">'
-            html += '<img style="max-width:2em; padding-right:1em" src="' + deviceNameImage(optionProfile.DeviceName, optionProfile.AppName) + '"/>';
+            html += '<img style="max-width:2em; max-height:2em; padding-right:1em" src="' + deviceNameImage(optionProfile.DeviceName, optionProfile.AppName) + '"/>';
             html += '<div class="listItemBodyText">' + optionProfile.DeviceName + ' ' + optionProfile.AppName + '</div>';
             html += '</div>';
             html += '</div>';
