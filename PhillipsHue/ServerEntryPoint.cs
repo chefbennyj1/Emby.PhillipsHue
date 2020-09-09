@@ -324,10 +324,9 @@ namespace PhillipsHue
         private static bool ScheduleAllowScene(PhillipsHueSceneEmbyProfile profile)
         {
             if (string.IsNullOrEmpty(profile.Schedule)) return true;
-
-            return (DateTime.Now.TimeOfDay >= TimeSpan.Parse(profile.Schedule + ":00")) &&
-                   (DateTime.Now <= DateTime.Now.Date.AddDays(1).AddHours(4));
+            return (DateTime.Now.TimeOfDay >= TimeSpan.Parse(profile.Schedule + ":00") && DateTime.Now.TimeOfDay <= TimeSpan.Parse("4:00:00"));
         }
+       
 
         private void RunScene(string data, PluginConfiguration config)
         {

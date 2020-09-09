@@ -428,8 +428,16 @@
                 (result) => {
 
                     if (result.Scenes) {
+                        
                         var sceneObjects = JSON.parse(result.Scenes);
+
                         for (var i = 0; i <= Object.keys(sceneObjects).length - 1; i++) {
+
+                            ApiClient.getJSON(ApiClient.getUrl("GetLights?LightIds=" + Object.values(Object.values(sceneObjects)[i])[3])).then(
+                                (lights) => {
+                                    Console.log("Please report this line ion the console back to chef: " + lights)
+                                })
+                            
 
                             moviePlaybackStartedSelect.innerHTML   += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
                             moviePlaybackStoppedSelect.innerHTML   += ('<option value="' + Object.keys(sceneObjects)[i] + '">' + Object.values(Object.values(sceneObjects)[i])[0] + '</option>');
