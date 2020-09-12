@@ -354,7 +354,7 @@
             html += '<div class="inputContainer">';
             html += '<label class="inputLabel inputLabelUnfocused" for="scheduleTime">Schedule Time to trigger events</label>';
             html += '<input is="emby-input" type="time" id="scheduleTime" label="Schedule Time to trigger events" class="emby-input">';
-            html += '<div class="fieldDescription">Determines when scenes should be run by Emby. Between the time above and 4 AM.</div>';
+            html += '<div class="fieldDescription">Determines when scenes should be run by Emby. Between the time above and 6 AM.</div>';
             html += '</div>';
 
             html += '</div style="padding-top:2em">'

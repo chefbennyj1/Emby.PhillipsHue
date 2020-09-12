@@ -324,7 +324,7 @@ namespace PhillipsHue
         private static bool ScheduleAllowScene(PhillipsHueSceneEmbyProfile profile)
         {
             if (string.IsNullOrEmpty(profile.Schedule)) return true;
-            return (DateTime.Now.TimeOfDay >= TimeSpan.Parse(profile.Schedule + ":00") && DateTime.Now.TimeOfDay <= TimeSpan.Parse("6:00:00"));
+            return (DateTime.Now.TimeOfDay >= TimeSpan.Parse(profile.Schedule + ":00") || DateTime.Now.TimeOfDay <= TimeSpan.Parse("6:00:00"));
         }
        
 
