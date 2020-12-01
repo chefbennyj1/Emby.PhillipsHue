@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using MediaBrowser.Common.Net;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Plugins;
@@ -89,8 +90,10 @@ namespace PhillipsHue
 
                     if (PausedSessionsIds.Exists(s => s.Equals(e.Session.Id)))
                     {
-                        PlaybackUnPaused(e, config, config.SavedHueEmbyProfiles.FirstOrDefault(p => p.DeviceName.Equals(e.Session.DeviceName)));
                         PausedSessionsIds.RemoveAll(s => s.Equals(e.Session.Id));
+                        Task.Delay(150);
+                        PlaybackUnPaused(e, config, config.SavedHueEmbyProfiles.FirstOrDefault(p => p.DeviceName.Equals(e.Session.DeviceName)));
+                        
                     }
 
                     break;
