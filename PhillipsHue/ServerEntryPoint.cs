@@ -47,7 +47,15 @@ namespace PhillipsHue
             SessionManager.PlaybackProgress += PlaybackProgress;
         }
 
-        private List<string> PausedSessionsIds = new List<string>();
+        private class PausedSession
+        {
+
+            public string SessionId  { get; set; }
+            public DateTime PausedAt { get; set; }
+
+        }
+
+        private static List<PausedSession> PausedSessionsIds = new List<PausedSession>();
 
         private void PlaybackProgress(object sender, PlaybackProgressEventArgs e)
         {
@@ -62,6 +70,7 @@ namespace PhillipsHue
                         e.Session.PlayState.PositionTicks > (e.Item.RunTimeTicks - (profile?.MediaItemCreditLength * 10000000)))
                     {
                         PlaybackCredits(e, profile, config);
+                        return;
                     }
                 }
             }
@@ -69,36 +78,46 @@ namespace PhillipsHue
             //No paused Session and no flagged sessions paused, move on
             // ReSharper disable once ComplexConditionExpression
             if (!SessionManager.Sessions.Any(s => s.PlayState.IsPaused) && !PausedSessionsIds.Any()) return;
-            
-            switch (e.Session.PlayState.IsPaused)
+
+            foreach (var session in SessionManager.Sessions)
             {
-                case true:
-                    // We've already flagged this session, move on
-                    if (PausedSessionsIds.Exists(s => s.Equals(e.Session.Id))) return;
-                    //We don't have a profile for this paused session device, move on
-                    if (!config.SavedHueEmbyProfiles.Exists(p => p.DeviceName.Equals(e.Session.DeviceName))) return;
+                //if (session.Id != e.Session.Id) continue;
+                switch (session.PlayState.IsPaused)
+                {
+                    case true:
+                        //We don't have a profile for this paused session device, move on
+                        if (!config.SavedHueEmbyProfiles.Exists(p => p.DeviceName.Equals(session.DeviceName))) continue;
+                        // We've already flagged this session, move on
+                        if (PausedSessionsIds.Exists(s => s.SessionId.Equals(session.Id))) continue;
 
-                    PausedSessionsIds.Add(e.Session.Id);
+                        PausedSessionsIds.Add(new PausedSession()
+                        {
+                            SessionId = session.Id,
+                            PausedAt = DateTime.Now
+                        });
 
-                    PlaybackPaused(e, config, e.Session,
+                        PlaybackPaused(e, config, session,
                             config.SavedHueEmbyProfiles.FirstOrDefault(p =>
-                                p.DeviceName.Equals(e.Session.DeviceName)));
+                                p.DeviceName.Equals(session.DeviceName)));
 
-                    break;
-
-                case false:
-
-                    if (PausedSessionsIds.Exists(s => s.Equals(e.Session.Id)))
-                    {
-                        PausedSessionsIds.RemoveAll(s => s.Equals(e.Session.Id));
-                        Task.Delay(150);
-                        PlaybackUnPaused(e, config, config.SavedHueEmbyProfiles.FirstOrDefault(p => p.DeviceName.Equals(e.Session.DeviceName)));
                         
-                    }
+                        break;
 
-                    break;
+                    case false:
+
+                        if (PausedSessionsIds.Exists(s => s.SessionId.Equals(session.Id)))
+                        {
+                            if (PausedSessionsIds.FirstOrDefault(s => s.SessionId == session.Id)?.PausedAt.AddSeconds(5) < DateTime.Now)
+                            {
+                                PausedSessionsIds.RemoveAll(s => s.SessionId.Equals(session.Id));
+                                PlaybackUnPaused(e, config, config.SavedHueEmbyProfiles.FirstOrDefault(p => p.DeviceName.Equals(session.DeviceName)));
+                            }
+                        
+                        }
+
+                        break;
+                }
             }
-           
         }
 
         // ReSharper disable once TooManyArguments
