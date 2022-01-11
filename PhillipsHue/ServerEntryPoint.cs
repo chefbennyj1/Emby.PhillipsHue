@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using MediaBrowser.Common.Net;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Plugins;
@@ -21,7 +20,8 @@ namespace PhillipsHue
         private static ServerEntryPoint Instance { get; set; }
         private static ISessionManager SessionManager { get; set; }
 
-        // ReSharper disable once TooManyDependencies
+        private static List<string> StartedSessionIds = new List<string>();
+
         public ServerEntryPoint(IJsonSerializer jsonSerializer, IHttpClient client, ISessionManager sessionManager, ILogManager logManager)
         {
             JsonSerializer = jsonSerializer;
@@ -60,7 +60,12 @@ namespace PhillipsHue
         private void PlaybackProgress(object sender, PlaybackProgressEventArgs e)
         {
             var config = Plugin.Instance.Configuration;
-            
+            if (!config.SavedHueEmbyProfiles.Exists(p => p.DeviceName.Equals(e.DeviceName))) 
+                return;
+
+            if (config.BridgeIpAddress == null) 
+                return;
+
             if (config.SavedHueEmbyProfiles.Exists(p => p.DeviceName.Equals(e.Session.DeviceName)))
             {
                 var profile = config.SavedHueEmbyProfiles.FirstOrDefault(p => p.DeviceName.Equals(e.Session.DeviceName));
@@ -75,59 +80,57 @@ namespace PhillipsHue
                 }
             }
 
-            //No paused Session and no flagged sessions paused, move on
-            // ReSharper disable once ComplexConditionExpression
-            if (!SessionManager.Sessions.Any(s => s.PlayState.IsPaused) && !PausedSessionsIds.Any()) return;
-
-            foreach (var session in SessionManager.Sessions)
+            switch (e.Session.PlayState.IsPaused)
             {
-                //if (session.Id != e.Session.Id) continue;
-                switch (session.PlayState.IsPaused)
-                {
-                    case true:
-                        //We don't have a profile for this paused session device, move on
-                        if (!config.SavedHueEmbyProfiles.Exists(p => p.DeviceName.Equals(session.DeviceName))) continue;
-                        // We've already flagged this session, move on
-                        if (PausedSessionsIds.Exists(s => s.SessionId.Equals(session.Id))) continue;
+                case true:
+                    logger.Debug($"Session is pausing:  Device: { e.DeviceName }  Session: { e.Session.Id }");
 
-                        PausedSessionsIds.Add(new PausedSession()
+                    // We've already flagged this session, move on
+                    lock (PausedSessionsIds)
+                    {
+                        if (PausedSessionsIds.Exists(s => s.SessionId.Equals(e.Session.Id)))
                         {
-                            SessionId = session.Id,
-                            PausedAt = DateTime.Now
-                        });
-
-                        PlaybackPaused(e, config, session,
-                            config.SavedHueEmbyProfiles.FirstOrDefault(p =>
-                                p.DeviceName.Equals(session.DeviceName)));
-
-                        
-                        break;
-
-                    case false:
-
-                        if (PausedSessionsIds.Exists(s => s.SessionId.Equals(session.Id)))
+                            logger.Debug($"Session already paused: { e.Session.Id }");
+                        }
+                        else
                         {
-                            if (PausedSessionsIds.FirstOrDefault(s => s.SessionId == session.Id)?.PausedAt.AddSeconds(5) < DateTime.Now)
+                            PausedSessionsIds.Add(new PausedSession()
                             {
-                                PausedSessionsIds.RemoveAll(s => s.SessionId.Equals(session.Id));
-                                PlaybackUnPaused(e, config, config.SavedHueEmbyProfiles.FirstOrDefault(p => p.DeviceName.Equals(session.DeviceName)));
-                            }
-                        
+                                SessionId = e.Session.Id,
+                                PausedAt = DateTime.Now
+                            });
                         }
 
-                        break;
-                }
+                        PlaybackPaused(e, config, e.Session,
+                            config.SavedHueEmbyProfiles.FirstOrDefault(p =>
+                                p.DeviceName.Equals(e.Session.DeviceName)));
+                    }
+                       
+                    break;
+
+                case false:
+                    logger.Debug($"Session is un pausing:  Device: { e.DeviceName }  Session: { e.Session.Id }");
+                    lock (PausedSessionsIds)
+                    {
+                        if (PausedSessionsIds.Exists(s => s.SessionId.Equals(e.Session.Id)))
+                        {
+                            PausedSessionsIds.RemoveAll(s => s.SessionId.Equals(e.Session.Id));
+                            PlaybackUnPaused(e, config, config.SavedHueEmbyProfiles.FirstOrDefault(p => p.DeviceName.Equals(e.Session.DeviceName)));
+                        }
+                    }
+
+                    break;
             }
         }
 
-        // ReSharper disable once TooManyArguments
         private void PlaybackUnPaused(PlaybackProgressEventArgs e, PluginConfiguration config, PhillipsHueSceneEmbyProfile profile)
         {
-            if (config.BridgeIpAddress == null) return;
+            if (config.BridgeIpAddress == null) 
+                return;
 
-            logger.Info("Phillips Hue Reports Playback UnPaused...");
+            logger.Debug("Phillips Hue Reports Playback UnPaused...");
 
-            logger.Info("Phillips Hue Found Profile Device: " + profile.DeviceName);
+            logger.Debug("Phillips Hue Profile Device: " + profile.DeviceName);
 
             if (!ScheduleAllowScene(profile))
             {
@@ -155,7 +158,7 @@ namespace PhillipsHue
                     break;
             }
 
-            logger.Info($"Phillips Hue Reports {e.MediaInfo.Type} will trigger Playback UnPaused Scene for {e.DeviceName}");
+            logger.Debug($"Phillips Hue Reports {e.MediaInfo.Type} will trigger Playback UnPaused Scene for {e.DeviceName}");
 
             RunScene(JsonSerializer.SerializeToString(new SceneRequest
             {
@@ -165,18 +168,18 @@ namespace PhillipsHue
 
         }
 
-        // ReSharper disable once TooManyArguments
         private void PlaybackPaused(PlaybackProgressEventArgs e, PluginConfiguration config, SessionInfo session, PhillipsHueSceneEmbyProfile profile)
         {
-            if (config.BridgeIpAddress == null) return;
+            if (config.BridgeIpAddress == null) 
+                return;
 
-            logger.Info("Phillips Hue Reports Playback Paused...");
+            logger.Debug("Phillips Hue Reports Playback Paused...");
 
-            logger.Info($"Phillips Hue Found Session Device: { session.DeviceName }");
+            logger.Debug($"Phillips Hue Found Session Device: { session.DeviceName }");
 
             if (!ScheduleAllowScene(profile))
             {
-                logger.Info($"Phillips Hue profile not allowed to run at this time: { profile.DeviceName }");
+                logger.Debug($"Phillips Hue profile not allowed to run at this time: { profile.DeviceName }");
                 return;
             }
 
@@ -212,33 +215,42 @@ namespace PhillipsHue
 
         private void PlaybackStopped(object sender, PlaybackStopEventArgs e)
         {
-            logger.Info("Phillips Hue Reports Playback Stopped");
-
             var config = Plugin.Instance.Configuration;
-
-            if (config.BridgeIpAddress == null) return;
-
-            if (e.IsPaused) return;
-
             //We check here if a profile exists or return
             if (!config.SavedHueEmbyProfiles.Exists(p => p.DeviceName.Equals(e.DeviceName) &&
-                                                         p.AppName.Equals(e.ClientName))) return;
+                                                         p.AppName.Equals(e.ClientName))) 
+                return;
+
+            if (config.BridgeIpAddress == null) 
+                return;
+
+            lock (StartedSessionIds)
+            {
+                if (!StartedSessionIds.Exists(s => s.Equals(e.Session.Id)))
+                    return;
+
+                StartedSessionIds.RemoveAll(s => s.Equals(e.Session.Id));
+            }
+
+            logger.Debug($"Phillips Hue Reports Playback Stopped.  Device: { e.DeviceName }  Session: { e.Session.Id }");
+
 
             //The item was in a paused state when the user stopped it, clean up the paused session list.
-            if (PausedSessionsIds.Exists(s => s.Equals(e.Session.Id))) PausedSessionsIds.RemoveAll(s => s.Equals(e.Session.Id));
+            if (PausedSessionsIds.Exists(s => s.Equals(e.Session.Id))) 
+                PausedSessionsIds.RemoveAll(s => s.Equals(e.Session.Id));
 
             //The item might appear in the credit session list remove it if it does.
-            if (CreditSessions.Exists(s => s.Equals(e.Session.Id))) CreditSessions.RemoveAll(s => s.Equals(e.Session.Id));
+            if (CreditSessions.Exists(s => s.Equals(e.Session.Id))) 
+                CreditSessions.RemoveAll(s => s.Equals(e.Session.Id));
 
             //We can assume this will not be null, even though he have to assert it is not null below "profile?.{property}"
             var profile = config.SavedHueEmbyProfiles.FirstOrDefault(p => p.DeviceName.Equals(e.DeviceName) &&
                                                                           p.AppName.Equals(e.ClientName));
-
-            logger.Info($"Phillips Hue Found Profile Device: { e.DeviceName } ");
+            logger.Debug($"Phillips Hue Found Profile Device: { e.DeviceName } ");
 
             if (!ScheduleAllowScene(profile))
             {
-                logger.Info($"Phillips Hue profile not allowed to run at this time: { profile?.DeviceName }");
+                logger.Debug($"Phillips Hue profile not allowed to run at this time: { profile?.DeviceName }");
                 return;
             }
 
@@ -262,7 +274,7 @@ namespace PhillipsHue
                     break;
             }
 
-            logger.Info("Phillips Hue Reports " + e.MediaInfo.Type + " will trigger Playback Stopped Scene on " + e.DeviceName);
+            logger.Debug("Phillips Hue Reports " + e.MediaInfo.Type + " will trigger Playback Stopped Scene on " + e.DeviceName);
 
             RunScene(JsonSerializer.SerializeToString(new SceneRequest
             {
@@ -275,22 +287,44 @@ namespace PhillipsHue
         private void PlaybackStart(object sender, PlaybackProgressEventArgs e)
         {
             var config = Plugin.Instance.Configuration;
-            if (config.BridgeIpAddress == null) return;
+
+            if (config.BridgeIpAddress == null) 
+                return;
+
+            lock (StartedSessionIds)
+            {
+                if (StartedSessionIds.Exists(s => s.Equals(e.Session.Id)))
+                    return;
+
+                StartedSessionIds.Add(e.Session.Id);
+            }
 
             //No profile, move on
-            if (!config.SavedHueEmbyProfiles.Exists(p => p.DeviceName.Equals(e.DeviceName) && p.AppName.Equals(e.ClientName))) return;
+            if (!config.SavedHueEmbyProfiles.Exists(p => p.DeviceName.Equals(e.DeviceName) && p.AppName.Equals(e.ClientName))) 
+                return;
 
-            logger.Info("Phillips Hue Reports Playback Started");
+            logger.Debug($"Phillips Hue Reports Playback Started.  Device: { e.DeviceName }  Session: { e.Session.Id }");
 
             var profile = config.SavedHueEmbyProfiles.FirstOrDefault(p => p.DeviceName.Equals(e.DeviceName) &&
                                                                           p.AppName.Equals(e.ClientName));
 
-            logger.Info($"Phillips Hue Found Profile Device: { e.DeviceName }");
+            logger.Debug($"Phillips Hue Profile Device: { e.DeviceName }");
 
             if (!ScheduleAllowScene(profile))
             {
                 logger.Info($"Phillips Hue profile not allowed to run at this time: { profile?.DeviceName }");
+
+                lock (StartedSessionIds)
+                {
+                    StartedSessionIds.RemoveAll(s => s.Equals(e.Session.Id));
+                }
+
                 return;
+            }
+
+            lock (PausedSessionsIds)
+            {
+                PausedSessionsIds.RemoveAll(s => s.SessionId.Equals(e.Session.Id));
             }
 
             var sceneName = string.Empty;
@@ -314,7 +348,7 @@ namespace PhillipsHue
                     break;
             }
 
-            logger.Info($"Phillips Hue Reports { e.MediaInfo.Type } will trigger Playback Started Scene on { e.DeviceName }");
+            logger.Debug($"Phillips Hue Reports { e.MediaInfo.Type } will trigger Playback Started Scene on { e.DeviceName }");
 
             RunScene(JsonSerializer.SerializeToString(new SceneRequest
             {
@@ -327,10 +361,17 @@ namespace PhillipsHue
         private List<string> CreditSessions = new List<string>();
         private void PlaybackCredits(PlaybackProgressEventArgs e, PhillipsHueSceneEmbyProfile profile, PluginConfiguration config)
         {
-            if (CreditSessions.Exists(s => s.Equals(e.Session.Id))) return; //We've already triggered the event, it's in the list - move on
-            
-            CreditSessions.Add(e.Session.Id); //Add the session ID to the list so this event doesn't trigger again
-            logger.Info($"Phillips Hue Reports trigger Credit Scene on {e.DeviceName}"); //Log that shit.
+            lock (CreditSessions)
+            {
+                //We've already triggered the event, it's in the list - move on
+                if (CreditSessions.Exists(s => s.Equals(e.Session.Id))) 
+                    return;
+
+                //Add the session ID to the list so this event doesn't trigger again
+                CreditSessions.Add(e.Session.Id); 
+            }
+
+            logger.Debug($"Phillips Hue Reports trigger Credit Scene on {e.DeviceName}"); 
             RunScene(JsonSerializer.SerializeToString(new SceneRequest
             {
                 scene = profile.MediaItemCredits
@@ -349,7 +390,6 @@ namespace PhillipsHue
             return (DateTime.Now.TimeOfDay >= TimeSpan.Parse(profile.Schedule + ":00") || DateTime.Now.TimeOfDay <= TimeSpan.Parse("6:00:00"));
         }
        
-
         private void RunScene(string data, PluginConfiguration config)
         {
             try
@@ -361,7 +401,7 @@ namespace PhillipsHue
                     RequestContent = data.AsMemory(),
                     RequestContentType = "application/json"
                 }, "PUT");
-                logger.Info("Phillips Hue Reports Scene Trigger Success");
+                logger.Debug("Phillips Hue Reports Scene Trigger Success");
             }
             catch (Exception e)
             {
