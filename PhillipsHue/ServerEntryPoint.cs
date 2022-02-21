@@ -236,12 +236,18 @@ namespace PhillipsHue
 
 
             //The item was in a paused state when the user stopped it, clean up the paused session list.
-            if (PausedSessionsIds.Exists(s => s.Equals(e.Session.Id))) 
-                PausedSessionsIds.RemoveAll(s => s.Equals(e.Session.Id));
+            lock (PausedSessionsIds)
+            {
+                if (PausedSessionsIds.Exists(s => s.Equals(e.Session.Id)))
+                    PausedSessionsIds.RemoveAll(s => s.Equals(e.Session.Id));
+            }
 
             //The item might appear in the credit session list remove it if it does.
-            if (CreditSessions.Exists(s => s.Equals(e.Session.Id))) 
-                CreditSessions.RemoveAll(s => s.Equals(e.Session.Id));
+            lock (CreditSessions)
+            {
+                if (CreditSessions.Exists(s => s.Equals(e.Session.Id)))
+                    CreditSessions.RemoveAll(s => s.Equals(e.Session.Id));
+            }
 
             //We can assume this will not be null, even though he have to assert it is not null below "profile?.{property}"
             var profile = config.SavedHueEmbyProfiles.FirstOrDefault(p => p.DeviceName.Equals(e.DeviceName) &&
