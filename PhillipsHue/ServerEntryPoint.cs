@@ -343,10 +343,28 @@ namespace PhillipsHue
             public string scene { get; set; }
         }
 
-        private static bool ScheduleAllowScene(PhillipsHueSceneEmbyProfile profile)
+        private bool ScheduleAllowScene(PhillipsHueSceneEmbyProfile profile)
         {
-            if (string.IsNullOrEmpty(profile.Schedule)) return true;
-            return (DateTime.Now.TimeOfDay >= TimeSpan.Parse(profile.Schedule + ":00") || DateTime.Now.TimeOfDay <= TimeSpan.Parse("6:00:00"));
+            bool retVal = false;
+
+            if (string.IsNullOrEmpty(profile.ScheduleStart) || string.IsNullOrEmpty(profile.ScheduleEnd)) 
+                return true;
+
+            // assumes times are not on same side of midnight
+            //   return (DateTime.Now.TimeOfDay >= TimeSpan.Parse(profile.ScheduleStart + ":00") || DateTime.Now.TimeOfDay <= TimeSpan.Parse("6:00:00"));
+
+            TimeSpan start = TimeSpan.Parse(profile.ScheduleStart + ":00");
+            TimeSpan end = TimeSpan.Parse(profile.ScheduleEnd + ":00");
+            TimeSpan hours = DateTime.Now.TimeOfDay;
+
+            if (start < end)
+                retVal = start < hours && hours < end;
+            else
+                retVal = hours < end || start < hours;
+
+            logger.Debug($"ScheduleStart {profile.ScheduleStart}  ScheduleEnd {profile.ScheduleEnd}   Returning {retVal}");
+
+            return retVal;
         }
        
 

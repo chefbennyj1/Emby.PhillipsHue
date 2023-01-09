@@ -40,7 +40,8 @@ namespace PhillipsHue.Configuration
         public string LiveTvPlaybackPaused { get; set; }
         public string LiveTvPlaybackUnPaused { get; set; }
 
-        public string Schedule { get; set; }
+        public string ScheduleStart { get; set; }
+        public string ScheduleEnd { get; set; }
 
         public string MediaItemCredits { get; set; }
         public int MediaItemCreditLength { get; set; }

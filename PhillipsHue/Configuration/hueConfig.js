@@ -341,20 +341,29 @@
             html += '<label class="selectLabel" for="LiveTvPlaybackUnPaused">LiveTv Playback UnPaused Scene:</label>';
             html += '<select is="emby-select" type="text" id="LiveTvPlaybackUnPaused" name="LiveTvPlaybackUnPaused" class="emby-input"></select>';
             html += '<div class="selectArrowContainer">';
-            html += '<div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>';
-            html += '</div>';
-            html += '</div> ';
-           
+            html += '<div style="visibility: hidden;">0</div><i class="selectArrow md-icon"></i>'; html += '<div class="sectionTitleContainer align-items-center">';
+            html += '</div> ';   
+            html += '</div> '; 
             
             html += '<div class="sectionTitleContainer align-items-center">';
-            html += '<h2 class="sectionTitle"><span>Schedule Time</span></h2> ';
-            html += '<p>Scenes will be ignored before a certain time of day.</p> ';
+            html += '<h2 class="sectionTitle"><span>Schedule Start Time</span></h2> ';
             html += '</div> ';
 
             html += '<div class="inputContainer">';
-            html += '<label class="inputLabel inputLabelUnfocused" for="scheduleTime">Schedule Time to trigger events</label>';
-            html += '<input is="emby-input" type="time" id="scheduleTime" label="Schedule Time to trigger events" class="emby-input">';
-            html += '<div class="fieldDescription">Determines when scenes should be run by Emby. Between the time above and 6 AM.</div>';
+            html += '<label class="inputLabel inputLabelUnfocused" for="scheduleStartTime">Schedule Start Time to trigger scenes</label>';
+            html += '<input is="emby-input" type="time" id="scheduleStartTime" label="Schedule Start Time to trigger scenes" class="emby-input">';
+            html += '<div class="fieldDescription">Determines when scenes should be run by Emby. Between this time and Schedule End Time (below).</div>';
+            html += '</div>';
+
+            html += '<div class="sectionTitleContainer align-items-center">';
+            html += '<h2 class="sectionTitle"><span>Schedule End Time</span></h2> ';
+ 
+            html += '</div> ';
+
+            html += '<div class="inputContainer">';
+            html += '<label class="inputLabel inputLabelUnfocused" for="scheduleEndTime">Schedule End Time to trigger scenes</label>';
+            html += '<input is="emby-input" type="time" id="scheduleEndTime" label="Schedule End Time to trigger scenes" class="emby-input">';
+            html += '<div class="fieldDescription">Determines when scenes should be run by Emby. Between the Schedule Start Time (above) and this time.</div>';
             html += '</div>';
 
             html += '</div style="padding-top:2em">'
@@ -382,7 +391,8 @@
             var liveTvPlaybackPausedSelect   = dlg.querySelector('#LiveTvPlaybackPaused');
             var liveTvPlaybackUnPausedSelect = dlg.querySelector('#LiveTvPlaybackUnPaused');
 
-            var schedule                     = dlg.querySelector('#scheduleTime');
+            var scheduleStart = dlg.querySelector('#scheduleStartTime');
+            var scheduleEnd = dlg.querySelector('#scheduleEndTime');
 
             var mediaItemCreditLength        = dlg.querySelector('#creditLength');
             var mediaItemCreditsSelect       = dlg.querySelector('#MediaItemCredits');
@@ -469,7 +479,8 @@
                                     liveTvPlaybackStoppedSelect.value  = option.LiveTvPlaybackStopped  || "";
                                     liveTvPlaybackPausedSelect.value   = option.LiveTvPlaybackPaused   || "";
                                     liveTvPlaybackUnPausedSelect.value = option.LiveTvPlaybackUnPaused || "";
-                                    schedule.value                     = option.Schedule               || "";
+                                    scheduleStart.value = option.ScheduleStart || "";
+                                    scheduleEnd.value = option.ScheduleEnd || "6";
                                     mediaItemCreditLength.value        = option.MediaItemCreditLength  || "";
                                     mediaItemCreditsSelect.value       = option.MediaItemCredits       || "";
 
@@ -497,7 +508,8 @@
                     var liveTvPlaybackPausedSelect   = dlg.querySelector('#LiveTvPlaybackPaused');
                     var liveTvPlaybackUnPausedSelect = dlg.querySelector('#LiveTvPlaybackUnPaused');
 
-                    var schedule                     = dlg.querySelector('#scheduleTime');
+                    var scheduleStart = dlg.querySelector('#scheduleStartTime');
+                    var scheduleEnd = dlg.querySelector('#scheduleEndTime');
 
                     var mediaItemCreditLength        = dlg.querySelector('#creditLength');
                     var mediaItemCreditsSelect       = dlg.querySelector('#MediaItemCredits');
@@ -557,7 +569,8 @@
                             mediaItemCreditsSelect.options[mediaItemCreditsSelect.selectedIndex >= 0
                                 ? mediaItemCreditsSelect.selectedIndex
                                 : 0].value,
-                        Schedule: schedule.value,
+                        ScheduleStart: scheduleStart.value,
+                        ScheduleEnd: scheduleEnd.value,
                         MediaItemCreditLength : mediaItemCreditLength.value
                 }
 
